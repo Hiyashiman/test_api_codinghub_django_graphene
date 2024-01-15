@@ -1,5 +1,6 @@
 import graphene 
 from graphene_django import DjangoObjectType
+from graphql import GraphQLError
 from product.models import *
 from graphene import InputObjectType
 class ProductType(DjangoObjectType):
@@ -73,65 +74,80 @@ class CreateProductDetail(graphene.Mutation):
         return CreateProductDetail(productDetail=productDetail)
         
 class DeleteProduct(graphene.Mutation):
-  class Arguments:
-    id = graphene.ID()
+    class Arguments:
+        id = graphene.ID()
 
-  product = graphene.Field(ProductType)
+    product = graphene.Field(ProductType)
 
-  def mutate(self, info, id):
-    product = Product.objects.get(pk=id)
-    if product is not None:
-      product.delete()
-    return DeleteProduct(product=product)
+    def mutate(self, info, id):
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            raise GraphQLError(f"Product with id {id} does not exist.")
 
+        product.delete()
+        return DeleteProduct(product=None)
 
 class DeleteProductDetail(graphene.Mutation):
-  class Arguments:
-    id = graphene.ID()
+    class Arguments:
+        id = graphene.ID()
 
-  product_detail = graphene.Field(ProductDetailType)
+    product_detail = graphene.Field(ProductDetailType)
 
-  def mutate(self, info, id):
-    product_detail = ProductsDetail.objects.get(pk=id)
-    if product_detail is not None:
-      product_detail.delete()
-    return DeleteProductDetail(product_detail=product_detail)
+    def mutate(self, info, id):
+        try:
+            product_detail = ProductsDetail.objects.get(pk=id)
+        except ProductsDetail.DoesNotExist:
+            raise GraphQLError(f"ProductDetail with id {id} does not exist.")
 
+        product_detail.delete()
+
+        return DeleteProductDetail(product_detail=None)
 
 class UpdateProduct(graphene.Mutation):
-  
-  product = graphene.Field(ProductType)
-  class Arguments:
-    id = graphene.ID()
-    type = graphene.String(required=True)
-    item = graphene.String(required=True)
+    product = graphene.Field(ProductType)
 
-  def mutate(self, info, id, type,item):
-    product = Product.objects.get(pk=id)
-    product.type = type if type is not None else product.type
-    product.item = item if item is not None else product.item
-    product.save()
-    return UpdateProduct(product=product)
+    class Arguments:
+        id = graphene.ID()
+        type = graphene.String(required=True)
+        item = graphene.Int(required=True)
+
+    def mutate(self, info, id, type, item):
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            raise GraphQLError(f"Product with id {id} does not exist.")
+
+        product.type = type 
+        product.item = item 
+        product.save()
+
+        return UpdateProduct(product=product)
+
 
 class UpdateProductDetail(graphene.Mutation):
-  productDetail = graphene.Field(ProductDetailType)
+    productDetail = graphene.Field(ProductDetailType)
 
-  class Arguments:
-        id =graphene.ID()
+    class Arguments:
+        id = graphene.ID()
         product_detail_input = InputProductDetail()
 
+    def mutate(self, info, id, product_detail_input):
+        try:
+            product_detail = ProductsDetail.objects.get(pk=id)
+        except ProductsDetail.DoesNotExist:
+            raise GraphQLError(f"ProductDetail with id {id} does not exist.")
 
-  def mutate(self, info, id, product_detail_input):
-    product_detail = ProductsDetail.objects.get(pk=id)
-    related_product = Product.objects.get(pk=product_detail_input.product)
+        related_product = Product.objects.get(pk=product_detail_input.product)
 
-    product_detail.name = product_detail_input.name
-    product_detail.price = product_detail_input.price
-    product_detail.img = product_detail_input.img
-    product_detail.product = related_product
-    
-    product_detail.save()
-    return UpdateProductDetail(product_detail=product_detail)
+        product_detail.name = product_detail_input.name
+        product_detail.price = product_detail_input.price
+        product_detail.img = product_detail_input.img
+        product_detail.product = related_product
+
+        product_detail.save()
+
+        return UpdateProductDetail(productDetail=product_detail)
 
 
 
