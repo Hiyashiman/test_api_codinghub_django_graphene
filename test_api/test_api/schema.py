@@ -2,6 +2,7 @@ import graphene
 import users.schema
 import users_detail.schema
 import product.schema 
+
 class Query(users.schema.Query
             ,product.schema.Query
             , graphene.ObjectType):

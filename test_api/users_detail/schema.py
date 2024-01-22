@@ -15,10 +15,9 @@ class CreateUserDetail(graphene.Mutation):
         cardId = graphene.String(required = True)
         address = graphene.String(required = True)
         phoneNumber = graphene.String(required = True)
-        fk = graphene.ID(required = True)
 
-    def mutate(self ,info ,cardId,address,phoneNumber,fk):
-        user =  user = get_user_model().objects.get(id=fk)
+    def mutate(self ,info ,cardId,address,phoneNumber):
+        user = info.context.user
         userDetail = UsersDetail(
             cardId = cardId,
             address = address,

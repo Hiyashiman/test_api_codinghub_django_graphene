@@ -3,6 +3,9 @@ from graphene_django import DjangoObjectType
 from graphql import GraphQLError
 from product.models import *
 from graphene import InputObjectType
+from graphene import ObjectType, List, Int, String
+from graphql_jwt.decorators import login_required
+
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
@@ -14,7 +17,7 @@ class ProductDetailType(DjangoObjectType):
         fieds = '__all__'
 
 class Query(object):
-  all_products = graphene.List(ProductType)
+  all_products = List(ProductType, page=Int(), per_page=Int(), sort_by=String(), search=String())
   product = graphene.Field(ProductType, id=graphene.ID())
 
   all_product_detail = graphene.List(ProductDetailType)
@@ -25,9 +28,22 @@ class Query(object):
 
   def resolve_product_detail(self, info, id):
     return ProductsDetail.objects.get(pk=id)
+  
+  @login_required
+  def resolve_all_products(self, info, page=1, per_page=10, sort_by=None, search=None):
 
-  def resolve_all_products(self, info, **kwargs):
-    return Product.objects.all()
+    all_products = Product.objects.all()
+    
+    if sort_by:
+        all_products = all_products.order_by(sort_by)
+
+    if search:
+        all_products = all_products.filter(type__icontains=search)
+
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_items = all_products[start_idx:end_idx]  
+    return paginated_items  
 
   def resolve_product(self, info, id):
     return Product.objects.get(pk=id)

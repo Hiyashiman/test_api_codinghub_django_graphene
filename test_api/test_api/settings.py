@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,8 +26,9 @@ SECRET_KEY = 'django-insecure-o7-w@#&3)bb*_p19e)cgl$2zvd=jc-o%7gdooim7jnkznwlzuq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','192.168.1.141']
 
+# Allow credentials (cookies) to be sent with the requests
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
@@ -36,15 +38,34 @@ INSTALLED_APPS = [
     'users_detail',
     'product',
     'graphene_django',
+    "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
 ]
 GRAPHENE = {   
-    "SCHEMA": "test_api.schema.schema"
+    "SCHEMA": "test_api.schema.schema",
+     "MIDDLEWARE": [
+        "graphql_jwt.middleware.JSONWebTokenMiddleware",
+        ]
+}
+
+AUTHENTICATION_BACKENDS = [
+    "graphql_jwt.backends.JSONWebTokenBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+GRAPHQL_JWT = {
+    "JWT_AUTH_HEADER_PREFIX": "Bearer",
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_EXPIRATION_DELTA": timedelta(minutes=10),
+    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7),
+    "JWT_SECRET_KEY": SECRET_KEY,
+    "JWT_ALGORITHM": "HS256",
 }
 
 MIDDLEWARE = [
@@ -82,13 +103,23 @@ WSGI_APPLICATION = 'test_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "shop",
+        "USER": "postgres",
+        "PASSWORD": "admin",
+        "HOST": "localhost",  
+        "PORT": 5432,  
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -108,6 +139,20 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ALLOWED_HOSTS = ['*']
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", 
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_HEADERS = [
+    'access-control-allow-headers',
+    'access-control-allow-methods',
+    'content-type',
+    'authorization',
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
